@@ -1,5 +1,7 @@
 package ABCMeta;
 
+# XXX TODO : make methods that should be invalid to define in this class
+
 =head1 NAME
 
 ABCMeta provide compile time enforcement of methods that must be implemented

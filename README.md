@@ -22,15 +22,15 @@ So, with that, here are the core responsibilities of this package:
 
     1;
 
-    package Bar:
+    package Bar;
     use base 'Foo';
 
     # The code will fail to compile because "Bar" does not implement the "moocow" method.
 
 ## Another Example (final method enforcement)
 
-    package Boo:
-    use ABCMeta { "final" => [ 'cow' ] } # 'foo' is final
+    package Boo;
+    use ABCMeta { "final" => [ 'cow' ] }; # 'foo' is final
 
     sub cow { }
 
@@ -44,7 +44,7 @@ So, with that, here are the core responsibilities of this package:
 ## Yet another Example (final class)
 
     package Blah;
-    use ABCMeta { "class" => 1 }
+    use ABCMeta { "class" => 1 };
 
     package Wat;
     use base 'Blah';
@@ -54,7 +54,7 @@ So, with that, here are the core responsibilities of this package:
 ## Add it all together example (final/abstract example)
 
     package Mop;
-    use ABCMeta { "abstract" => [ "zip", "zap" ], "final" => [ "zoop", "zoot" ] }
+    use ABCMeta { "abstract" => [ "zip", "zap" ], "final" => [ "zoop", "zoot" ] };
 
     sub zoop { }
     sub zoot { }
