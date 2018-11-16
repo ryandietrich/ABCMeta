@@ -34,7 +34,7 @@ So, with that, here are the core responsibilities of this package:
 =head2 Another Example (final method enforcement)
 
     package Boo:
-    use ABCMeta { "final" => [ 'cow' ] } # 'foo' is final
+    use ABCMeta { "final" => [ 'cow' ] }; # 'foo' is final
 
     sub cow { }
 
@@ -48,7 +48,7 @@ So, with that, here are the core responsibilities of this package:
 =head2 Yet another Example (final class)
 
     package Blah;
-    use ABCMeta { "class" => 1 }
+    use ABCMeta { "class" => 1 };
 
     package Wat;
     use base 'Blah';
@@ -58,7 +58,7 @@ So, with that, here are the core responsibilities of this package:
 =head2 Add it all together example (final/abstract example)
 
     package Mop;
-    use ABCMeta { "abstract" => [ "zip", "zap" ], "final" => [ "zoop", "zoot" ] }
+    use ABCMeta { "abstract" => [ "zip", "zap" ], "final" => [ "zoop", "zoot" ] };
 
     sub zoop { }
     sub zoot { }
@@ -171,9 +171,14 @@ sub enforce_abstract_and_final {
         &does_any_class_inherit_from_abcmeta(\@superclasses, $abstract_methods);
         &does_base_class_have_final_methods($module, \@superclasses, $final_methods);
 
-        &_enforce_abstract_methods($abstract_methods, $module);
-        &_enforce_final_methods($final_methods, $module);
-        &_enforce_final_classes($module);
+        my @errors;
+        &_enforce_abstract_methods($abstract_methods, $module, \@errors);
+        &_enforce_final_methods($final_methods, $module, \@errors);
+        &_enforce_final_classes($module, \@errors);
+
+        if ( @errors ) {
+            croak join("\n", @errors) . "\n";
+        }
     }
 }
 
@@ -183,14 +188,10 @@ This method will enforce abstract methods will implemented by derived classes.
 
 =cut
 sub _enforce_abstract_methods {
-    my ( $abstract_methods, $module ) = @_;
+    my ( $abstract_methods, $module, $errors ) = @_;
     if ( scalar(@{$abstract_methods}) and ! exists($abstract->{$module}) ) {
-        my @errors;
         foreach my $req ( @{$abstract_methods} ) {
-            push(@errors, "    $module does not implement $req") unless ( ($module)->can($req) );
-        }
-        if ( @errors ) {
-            croak join("\n", @errors) . "\n";
+            push(@{$errors}, "    $module does not implement $req") unless ( ($module)->can($req) );
         }
     }
 }
@@ -201,7 +202,7 @@ This method will enforce final methods are not overriden by derived classes.
 
 =cut
 sub _enforce_final_methods {
-    my ( $final_methods, $module ) = @_;
+    my ( $final_methods, $module, $errors ) = @_;
     for my $fm ( @{$final_methods} ) {
         my $path = $module . "::" . $fm;
 
@@ -216,7 +217,7 @@ sub _enforce_final_methods {
 
         next if $cv->GV->isa('B::SPECIAL');
 
-        die("$module overrides final method $fm (" . $cv->START->file . ' : ' .  $cv->START->line . ")") if ( $module eq $cv->GV->STASH->NAME );
+        push(@{$errors}, "$module overrides final method $fm (" . $cv->START->file . ' : ' .  $cv->START->line . ")") if ( $module eq $cv->GV->STASH->NAME );
 
         #no strict;
         #my $str = $module . '::';
@@ -232,12 +233,13 @@ This method will verify any class marked as "final" is not being derived by any 
 sub _enforce_final_classes {
     my $module       = shift;
     my @superclasses = mro::get_linear_isa($module);
+    my $errors       = shift;
 
     foreach my $ssc ( @superclasses ) {
         next unless ( ref($ssc) eq 'ARRAY' );
         foreach my $sc ( @{$ssc} ) {
             next if ( $module eq $sc );
-            die("Module $module overrides final class $sc!") if ( $final_class->{$sc} );
+            push(@{$errors}, "Module $module overrides final class $sc!") if ( $final_class->{$sc} );
         }
     }
 }
